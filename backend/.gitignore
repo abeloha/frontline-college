@@ -1,0 +1,6 @@
+.env
+/uploads/**
+!/uploads/**/.gitkeep
+/tmp/
+frontline-college-api
+*.log

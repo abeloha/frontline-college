@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7fafd;
+  --foreground: #0b1f3a;
+
+  /* Brand palette, sampled from the college crest (deep clinical blue) and
+     the admissions flyer (alert red for urgency/CTA accents). */
+  --color-ink: #0b1f3a;
+  --color-navy-950: #041226;
+  --color-navy-900: #071c3a;
+  --color-navy-800: #0b2a52;
+  --color-primary-700: #063e73;
+  --color-primary-600: #0a4da6;
+  --color-primary-500: #0f63c4;
+  --color-primary-400: #3b82d6;
+  --color-sky-300: #7fb3e8;
+  --color-sky-200: #b7d9f7;
+  --color-sky-100: #dcedfc;
+  --color-ice-50: #f3f9ff;
+  --color-accent-600: #b81f28;
+  --color-accent-500: #d92a34;
+  --color-accent-400: #ef4b52;
+  --color-gold-400: #e0a63f;
+
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-ink: var(--color-ink);
+  --color-navy-950: var(--color-navy-950);
+  --color-navy-900: var(--color-navy-900);
+  --color-navy-800: var(--color-navy-800);
+  --color-primary-700: var(--color-primary-700);
+  --color-primary-600: var(--color-primary-600);
+  --color-primary-500: var(--color-primary-500);
+  --color-primary-400: var(--color-primary-400);
+  --color-sky-300: var(--color-sky-300);
+  --color-sky-200: var(--color-sky-200);
+  --color-sky-100: var(--color-sky-100);
+  --color-ice-50: var(--color-ice-50);
+  --color-accent-600: var(--color-accent-600);
+  --color-accent-500: var(--color-accent-500);
+  --color-accent-400: var(--color-accent-400);
+  --color-gold-400: var(--color-gold-400);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  --animate-marquee: marquee 32s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+* {
+  scrollbar-color: var(--color-primary-400) transparent;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  background: var(--color-ice-50);
+  color: var(--color-ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display), var(--font-body), sans-serif;
+}
+
+/* Fine noise/grain overlay used on dark hero sections for texture. */
+.bg-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+::selection {
+  background: var(--color-accent-500);
+  color: white;
+}
+
+/* Custom cursor is hidden on touch devices via JS check, but make sure the
+   native cursor never shows through gaps on desktop. */
+.cursor-none-desktop {
+  cursor: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
