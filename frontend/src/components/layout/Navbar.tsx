@@ -15,10 +15,22 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
+// Routes that open with a full-bleed dark hero — everywhere else (the
+// application form, login, portal, admin) starts on a light background, so
+// the nav can't render white-on-white until the user scrolls.
+const DARK_TOP_ROUTES = ["/", "/about", "/admissions", "/contact", "/admin/login"];
+function hasDarkTop(pathname: string) {
+  return DARK_TOP_ROUTES.includes(pathname) || pathname.startsWith("/programs");
+}
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  // "solid" = render the light-background/dark-text nav treatment, either
+  // because the user has scrolled past the hero, the mobile menu is open, or
+  // the current page never had a dark hero to begin with.
+  const solid = scrolled || open || !hasDarkTop(pathname);
 
   // Close the mobile menu when the route changes — adjusted during render
   // (React's recommended pattern) rather than in an effect.
@@ -43,7 +55,7 @@ export function Navbar() {
     <>
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-          scrolled || open
+          solid
             ? "bg-ice-50/85 shadow-[0_1px_0_0_rgba(11,31,58,0.06)] backdrop-blur-lg"
             : "bg-transparent"
         }`}
@@ -53,7 +65,7 @@ export function Navbar() {
             <Image src="/images/logo.jpeg" alt="Frontline College crest" width={42} height={42} className="rounded-full" priority />
             <span
               className={`hidden font-display text-sm font-semibold leading-tight tracking-tight sm:block ${
-                scrolled || open ? "text-ink" : "text-white"
+                solid ? "text-ink" : "text-white"
               }`}
             >
               Frontline College
@@ -70,10 +82,10 @@ export function Navbar() {
                 href={link.href}
                 data-cursor-hover
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  scrolled
+                  solid
                     ? "text-ink/70 hover:bg-primary-600/8 hover:text-ink"
                     : "text-white/80 hover:bg-white/10 hover:text-white"
-                } ${pathname === link.href ? (scrolled ? "text-primary-600" : "text-white") : ""}`}
+                } ${pathname === link.href ? (solid ? "text-primary-600" : "text-white") : ""}`}
               >
                 {link.label}
               </Link>
@@ -85,7 +97,7 @@ export function Navbar() {
               href="/login"
               data-cursor-hover
               className={`text-sm font-medium transition-colors ${
-                scrolled ? "text-ink/70 hover:text-ink" : "text-white/80 hover:text-white"
+                solid ? "text-ink/70 hover:text-ink" : "text-white/80 hover:text-white"
               }`}
             >
               Student Login
@@ -102,7 +114,7 @@ export function Navbar() {
 
           <button
             className={`inline-flex items-center justify-center rounded-full p-2 lg:hidden ${
-              scrolled || open ? "text-ink" : "text-white"
+              solid ? "text-ink" : "text-white"
             }`}
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
