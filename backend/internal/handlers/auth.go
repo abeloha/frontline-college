@@ -122,7 +122,7 @@ func Apply(c *gin.Context) {
 
 	cfg := config.Cfg
 	body := "<p>Dear " + student.FirstName + ",</p>" +
-		"<p>Thank you for applying to <strong>" + program.Name + "</strong> at Frontline College of Health Sciences and Technology.</p>" +
+		"<p>Thank you for applying to <strong>" + program.Name + "</strong> at Frontline College of Medical and Health Sciences.</p>" +
 		"<p>Your application number is <strong>" + application.ApplicationNumber + "</strong>. Applying is completely free — no payment is required to submit. " +
 		"To move your application forward, please log in to your applicant portal, review the application fee account details, and upload proof of payment.</p>"
 	if isNewStudent {

@@ -69,7 +69,7 @@ func WrapTemplate(title, bodyHTML string) string {
 <body style="font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#f2f6fb; padding:32px; color:#0b1f3a;">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
     <div style="background:#0a3d91;padding:20px 28px;">
-      <span style="color:#fff;font-size:16px;font-weight:700;letter-spacing:.02em;">Frontline College of Health Sciences and Technology</span>
+      <span style="color:#fff;font-size:16px;font-weight:700;letter-spacing:.02em;">Frontline College of Medical and Health Sciences</span>
     </div>
     <div style="padding:28px;">
       <h2 style="margin-top:0;color:#0a3d91;">%s</h2>

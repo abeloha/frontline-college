@@ -74,7 +74,7 @@ func Load() *Config {
 		SMTPPort:      getEnvInt("SMTP_PORT", 587),
 		SMTPUsername:  getEnv("SMTP_USERNAME", ""),
 		SMTPPassword:  getEnv("SMTP_PASSWORD", ""),
-		SMTPFromName:  getEnv("SMTP_FROM_NAME", "Frontline College of Health Sciences and Technology"),
+		SMTPFromName:  getEnv("SMTP_FROM_NAME", "Frontline College of Medical and Health Sciences"),
 		SMTPFromEmail: getEnv("SMTP_FROM_EMAIL", "admissions@frontlinecollege.edu.ng"),
 
 		AdminEmail:    getEnv("ADMIN_EMAIL", "admin@frontlinecollege.edu.ng"),
@@ -82,7 +82,7 @@ func Load() *Config {
 		AdminName:     getEnv("ADMIN_NAME", "Admissions Office"),
 
 		PaymentBankName:      getEnv("PAYMENT_BANK_NAME", "Zenith Bank Plc"),
-		PaymentAccountName:   getEnv("PAYMENT_ACCOUNT_NAME", "Frontline College of Health Sciences and Technology"),
+		PaymentAccountName:   getEnv("PAYMENT_ACCOUNT_NAME", "Frontline College of Medical and Health Sciences"),
 		PaymentAccountNumber: getEnv("PAYMENT_ACCOUNT_NUMBER", "1234567890"),
 		PaymentCurrency:      getEnv("PAYMENT_CURRENCY", "NGN"),
 		ApplicationFeeAmount: getEnvFloat("APPLICATION_FEE_AMOUNT", 5000),

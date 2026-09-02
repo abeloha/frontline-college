@@ -6,7 +6,7 @@ import { HeartPulse, ShieldCheck, Target } from "lucide-react";
 
 const pillars = [
   { icon: Target, title: "Our Vision", copy: "To be a leading institution for training competent, ethical, globally competitive health professionals." },
-  { icon: HeartPulse, title: "Our Mission", copy: "World-class training in health sciences and technology — bridging Nigeria's healthcare workforce gap." },
+  { icon: HeartPulse, title: "Our Mission", copy: "World-class training in medical and health sciences — bridging Nigeria's healthcare workforce gap." },
   { icon: ShieldCheck, title: "Approved & Registered", copy: "Registered under CAMA 1990 and approved by the FCT Department of Higher Education." },
 ];
 
@@ -35,7 +35,7 @@ export function AboutTeaser() {
           <SectionHeading
             eyebrow="About Frontline College"
             title="A private tertiary healthcare training institute in Kuje, FCT Abuja."
-            description="Frontline College of Health Sciences and Technology combines academic excellence, practical experience, and moral values to equip students for safe, ethical, patient-centered care."
+            description="Frontline College of Medical and Health Sciences combines academic excellence, practical experience, and moral values to equip students for safe, ethical, patient-centered care."
           />
 
           <div className="mt-10 space-y-6">

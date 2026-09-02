@@ -18,7 +18,7 @@ export function Footer() {
               <span className="font-display text-base font-semibold leading-tight">
                 Frontline College
                 <span className="block text-[11px] font-medium uppercase tracking-[0.16em] text-sky-200/70">
-                  Health Sciences &amp; Technology
+                  Medical &amp; Health Sciences
                 </span>
               </span>
             </div>
@@ -78,7 +78,7 @@ export function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs text-sky-100/50 sm:flex-row">
-          <p>&copy; {year} Frontline College of Health Sciences and Technology. All rights reserved.</p>
+          <p>&copy; {year} Frontline College of Medical and Health Sciences. All rights reserved.</p>
           <p>Registered under CAMA 1990 (as amended) &middot; Approved by the FCT Dept. of Higher Education</p>
         </div>
       </div>

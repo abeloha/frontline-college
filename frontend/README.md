@@ -1,7 +1,7 @@
 # Frontline College — Frontend
 
 Next.js 16 (App Router, TypeScript, Tailwind CSS v4) marketing site, online application, student
-portal and admin portal for Frontline College of Health Sciences and Technology.
+portal and admin portal for Frontline College of Medical and Health Sciences.
 
 See the [repo root README](../README.md) for the full project overview and quickstart.
 

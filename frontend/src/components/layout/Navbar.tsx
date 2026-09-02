@@ -70,7 +70,7 @@ export function Navbar() {
             >
               Frontline College
               <span className="block text-[11px] font-medium uppercase tracking-[0.16em] opacity-70">
-                Health Sciences &amp; Technology
+                Medical &amp; Health Sciences
               </span>
             </span>
           </Link>

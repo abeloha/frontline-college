@@ -4,7 +4,7 @@ import { ApplyForm } from "@/components/forms/ApplyForm";
 
 export const metadata: Metadata = {
   title: "Apply Online",
-  description: "Apply online to Frontline College of Health Sciences and Technology — free to submit, track your status from your student portal.",
+  description: "Apply online to Frontline College of Medical and Health Sciences — free to submit, track your status from your student portal.",
 };
 
 export default function ApplyPage() {

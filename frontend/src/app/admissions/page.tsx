@@ -13,7 +13,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Admissions",
-  description: "How to apply to Frontline College of Health Sciences and Technology — a simple, free, fully online application process.",
+  description: "How to apply to Frontline College of Medical and Health Sciences — a simple, free, fully online application process.",
 };
 
 const steps = [

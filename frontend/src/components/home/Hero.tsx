@@ -67,7 +67,7 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 1 }}
           className="mt-8 max-w-xl text-balance text-lg leading-relaxed text-sky-100/75"
         >
-          Frontline College of Health Sciences and Technology trains competent, ethical, globally
+          Frontline College of Medical and Health Sciences trains competent, ethical, globally
           competitive health professionals — combining rigorous academics with hands-on clinical
           and public health practice in Kuje, FCT Abuja.
         </motion.p>

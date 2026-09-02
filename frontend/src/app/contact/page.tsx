@@ -6,7 +6,7 @@ import { Clock, Mail, MapPin, Phone } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact Us",
-  description: "Get in touch with Frontline College of Health Sciences and Technology, Chikuku, Kuje Area Council, FCT Abuja.",
+  description: "Get in touch with Frontline College of Medical and Health Sciences, Chikuku, Kuje Area Council, FCT Abuja.",
 };
 
 const cards = [

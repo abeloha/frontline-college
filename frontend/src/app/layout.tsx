@@ -21,11 +21,11 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   metadataBase: new URL("https://frontlinecollege.edu.ng"),
   title: {
-    default: "Frontline College of Health Sciences and Technology",
+    default: "Frontline College of Medical and Health Sciences",
     template: "%s · Frontline College",
   },
   description:
-    "Frontline College of Health Sciences and Technology trains Nigeria's next generation of community health, public health and environmental health professionals. Admissions now open — apply online.",
+    "Frontline College of Medical and Health Sciences trains Nigeria's next generation of community health, public health and environmental health professionals. Admissions now open — apply online.",
   keywords: [
     "Frontline College",
     "health sciences college Abuja",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     "Kuje Abuja college",
   ],
   openGraph: {
-    title: "Frontline College of Health Sciences and Technology",
+    title: "Frontline College of Medical and Health Sciences",
     description: "Frontline in healthcare, excellence in training. Admissions now open.",
     type: "website",
     locale: "en_NG",

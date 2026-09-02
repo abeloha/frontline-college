@@ -47,7 +47,7 @@ export function Hero2() {
             transition={{ duration: 0.6, delay: 0.25 }}
             className="mt-6 max-w-md text-balance text-lg leading-relaxed text-ink/60"
           >
-            Frontline College of Health Sciences and Technology trains Nigeria&apos;s next
+            Frontline College of Medical and Health Sciences trains Nigeria&apos;s next
             community health, public health and environmental health professionals —
             hands-on, ethical, and workforce-ready.
           </motion.p>

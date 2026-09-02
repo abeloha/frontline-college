@@ -1,4 +1,4 @@
-# Frontline College of Health Sciences and Technology
+# Frontline College of Medical and Health Sciences
 
 A full admissions platform for Frontline College — a private tertiary healthcare training
 institute in Chikuku, Kuje Area Council, FCT Abuja. Built as a modern marketing site with a real

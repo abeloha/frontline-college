@@ -5,7 +5,7 @@ DESIGN PHILOSOPHY
 
 Do NOT design a conventional school or college landing page. Instead, design a website that feels like a living digital experience.
 
-Design a website for a college that focuses on health sciences and technology. Details about the college is at: about.md.
+Design a website for a college that focuses on medical and health sciences. Details about the college is at: about.md.
 The logo is at images/logo.jpeg (From there you can get color scheme)
 Sample flyer the college made is at images/flyer.jpeg (you may get additional info from there)
 

@@ -8,7 +8,7 @@ import { BadgeCheck, HeartPulse, ScrollText, Target, Users2, Sparkles } from "lu
 export const metadata: Metadata = {
   title: "About the College",
   description:
-    "Frontline College of Health Sciences and Technology is a private tertiary healthcare training institute in Chikuku, Kuje Area Council, FCT Abuja.",
+    "Frontline College of Medical and Health Sciences is a private tertiary healthcare training institute in Chikuku, Kuje Area Council, FCT Abuja.",
 };
 
 const values = [
@@ -62,7 +62,7 @@ export default function AboutPage() {
             <HeartPulse className="size-8 text-accent-500" />
             <h2 className="mt-5 font-display text-2xl font-semibold text-ink">Mission</h2>
             <p className="mt-3 leading-relaxed text-ink/65">
-              To deliver world-class training in health sciences and technology that combines
+              To deliver world-class training in medical and health sciences that combines
               academic excellence, practical experience, and moral values — bridging the
               healthcare workforce gap by equipping students to provide safe, ethical,
               patient-centered care.
@@ -98,7 +98,7 @@ export default function AboutPage() {
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mx-auto mt-4 max-w-2xl text-balance leading-relaxed text-ink/65">
-              Frontline College of Health Sciences and Technology is registered under the Companies
+              Frontline College of Medical and Health Sciences is registered under the Companies
               and Allied Matters Act 1990 (as amended) and approved by the Department of Higher
               Education, Federal Capital Territory Administration.
             </p>

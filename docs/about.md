@@ -1,11 +1,11 @@
-FRONTLINE COLLEGE OF HEALTH SCIENCES AND TECHNOLOGY. 
+FRONTLINE COLLEGE OF MEDICAL AND HEALTH SCIENCES. 
 
 ABOUT THE COLLEGE. 
-Frontline College of Health Sciences and Technology is a Private Tertiary Healthcare Training Institute, located at Chikuku community of Kuje Area Council Federal Capital Territory Abuja. The Institution is registered under the Company and Allied Matters Act 1990 (as amended) and approved by the Department of Higher Education, Federal Capital Territory Administration. 
+Frontline College of Medical and Health Sciences is a Private Tertiary Healthcare Training Institute, located at Chikuku community of Kuje Area Council Federal Capital Territory Abuja. The Institution is registered under the Company and Allied Matters Act 1990 (as amended) and approved by the Department of Higher Education, Federal Capital Territory Administration. 
 VISION
 To be a leading institution for the training of competent, ethical, and globally competitive health professionals who drive excellence in healthcare delivery.
 MISSION 
-To deliver world-class training in health sciences and technology that combines academic excellence, practical experience, and moral values. We aim to bridge the healthcare workforce gap by equipping students to provide safe, ethical, and patient-centered care.
+To deliver world-class training in medical and health sciences that combines academic excellence, practical experience, and moral values. We aim to bridge the healthcare workforce gap by equipping students to provide safe, ethical, and patient-centered care.
 DEPARTMENTS 
 1	Diploma in Community Health Extension Workers (CHEW)	3 Years
 2	Diploma in Public Health Technicians (PHT)	3 Years

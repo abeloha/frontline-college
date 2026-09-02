@@ -16,7 +16,7 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: "Home — Concept B",
-  description: "Alternate landing page concept for Frontline College of Health Sciences and Technology — for internal review.",
+  description: "Alternate landing page concept for Frontline College of Medical and Health Sciences — for internal review.",
 };
 
 // NOTE: this is a client-review concept for an alternate home page design —
