@@ -1,4 +1,3 @@
-// Command api is the entrypoint for the Frontline College admissions API.
 package main
 
 import (
