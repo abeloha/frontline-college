@@ -1,0 +1,80 @@
+
+cd /var/www/frontline-college/backend/
+go build -o main
+service frontline_backend restart
+
+
+service frontline_backend status
+
+journalctl -u frontline_backend -f
+
+
+cd /var/www/go/frontline_backend
+
+
+step 1: on the server, create a systemd unit file to keep your application running in the background
+
+nano /lib/systemd/system/frontline_backend.service
+
+[Unit]
+Description=frontline_backend
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+ExecStart=/var/www/frontline-college/backend/main
+WorkingDirectory=/var/www/frontline-college/backend
+
+[Install]
+WantedBy=multi-user.target
+
+
+Save and run:
+ service frontline_backend start
+ service frontline_backend status
+
+
+
+to restart, cd into the directory, stop the service, build again, start again:
+
+cd /var/www/frontline-college/backend/
+go build -o main
+service frontline_backend restart
+service frontline_backend status
+
+sudo journalctl -u frontline_backend -f
+
+
+ Step 2 — Setting Up a Reverse Proxy with Nginx
+Note: This is only neccessary to use ssl and to connect domain. Otherwise, if the firewall allows the port, you can access the app via the ip
+
+
+sudo nano /etc/nginx/sites-available/api.frontlinecollege.com.ng
+
+ server {
+    server_name api.frontlinecollege.com.ng;
+
+     location / {
+
+        
+        proxy_pass http://localhost:3011;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+    }
+}
+
+
+
+link
+sudo ln -s /etc/nginx/sites-available/api.frontlinecollege.com.ng /etc/nginx/sites-enabled/api.frontlinecollege.com.ng
+
+sudo nginx -t
+sudo systemctl restart nginx
+
+Kill already running process
+lsof -ti:3000 | xargs kill -9
+
