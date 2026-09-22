@@ -22,8 +22,8 @@ type Config struct {
 	DBPassword string
 	DBName     string
 
-	JWTSecret     string
-	JWTExpiryHrs  int
+	JWTSecret    string
+	JWTExpiryHrs int
 
 	SMTPHost      string
 	SMTPPort      int
@@ -43,7 +43,18 @@ type Config struct {
 	ApplicationFeeAmount float64
 	SchoolFeeAmount      float64
 
-	UploadDir  string
+	// Payment methods offered to a student — independently togglable so
+	// either can be turned off without redeploying code (e.g. Manual can be
+	// switched off once Razz is trusted, or Razz switched off if its
+	// integration needs to pause). See docs/payment-collection-api.md for
+	// what the Razz fields below come from.
+	ManualPaymentEnabled bool
+	RazzPaymentEnabled   bool
+	RazzAPIBaseURL       string
+	RazzAPIKey           string
+	RazzWebhookSecret    string
+
+	UploadDir   string
 	MaxUploadMB int64
 }
 
@@ -88,6 +99,12 @@ func Load() *Config {
 		ApplicationFeeAmount: getEnvFloat("APPLICATION_FEE_AMOUNT", 5000),
 		SchoolFeeAmount:      getEnvFloat("SCHOOL_FEE_AMOUNT", 180000),
 
+		ManualPaymentEnabled: getEnvBool("MANUAL_PAYMENT_ENABLED", true),
+		RazzPaymentEnabled:   getEnvBool("RAZZ_PAYMENT_ENABLED", false),
+		RazzAPIBaseURL:       getEnv("RAZZ_API_BASE_URL", ""),
+		RazzAPIKey:           getEnv("RAZZ_API_KEY", ""),
+		RazzWebhookSecret:    getEnv("RAZZ_WEBHOOK_SECRET", ""),
+
 		UploadDir:   getEnv("UPLOAD_DIR", "./uploads"),
 		MaxUploadMB: int64(getEnvInt("MAX_UPLOAD_MB", 5)),
 	}
@@ -115,6 +132,15 @@ func getEnvFloat(key string, fallback float64) float64 {
 	if v, ok := os.LookupEnv(key); ok && v != "" {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			return f
+		}
+	}
+	return fallback
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	if v, ok := os.LookupEnv(key); ok && v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			return b
 		}
 	}
 	return fallback

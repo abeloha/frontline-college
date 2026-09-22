@@ -179,14 +179,21 @@ export default function AdminApplicationDetailPage({ params }: { params: Promise
                       <FileClock className="size-4 text-gold-400" />
                     )}
                     <div>
-                      <p className="text-sm font-medium capitalize text-ink">{p.type.replace("_", " ")}</p>
+                      <p className="text-sm font-medium capitalize text-ink">
+                        {p.type.replace("_", " ")}
+                        {!p.fileUrl && (
+                          <span className="ml-2 text-xs font-normal normal-case text-primary-600">via Razz</span>
+                        )}
+                      </p>
                       <p className="text-xs text-ink/45">{new Date(p.uploadedAt).toLocaleString()} &middot; {p.status}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => viewFile(p.fileUrl)} className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:underline">
-                      <Eye className="size-3.5" /> View
-                    </button>
+                    {p.fileUrl && (
+                      <button onClick={() => viewFile(p.fileUrl)} className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:underline">
+                        <Eye className="size-3.5" /> View
+                      </button>
+                    )}
                     {p.status === "pending" && (
                       <>
                         <Button size="md" disabled={busy} onClick={() => verifyPayment(p.id, "verify")}>Verify</Button>

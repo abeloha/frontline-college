@@ -22,6 +22,20 @@ export type PaymentProof = {
   reviewedAt?: string;
 };
 
+export type VirtualAccount = {
+  id: number;
+  applicationId: number;
+  type: "application_fee" | "school_fee";
+  reference: string;
+  accountNumber: string;
+  bankName: string;
+  amount: number;
+  status: "pending" | "paid" | "expired";
+  expiresAt: string;
+  paidAt?: string;
+  createdAt: string;
+};
+
 export type AdmissionLetter = {
   id: number;
   applicationId: number;
@@ -71,6 +85,7 @@ export type Application = {
   reviewedAt?: string;
   admissionAcceptedAt?: string;
   paymentProofs?: PaymentProof[];
+  virtualAccounts?: VirtualAccount[];
   admissionLetter?: AdmissionLetter | null;
 };
 
@@ -81,6 +96,33 @@ export type PaymentInfo = {
   currency: string;
   applicationFeeAmount: number;
   schoolFeeAmount: number;
+  paymentMethods: { manual: boolean; razz: boolean };
+};
+
+export type NoticeCategory = "general" | "placement" | "finance" | "academic" | "event";
+
+export type Notice = {
+  id: number;
+  title: string;
+  body: string;
+  category: NoticeCategory;
+  programId?: number;
+  program?: Program;
+  fileUrl?: string;
+  pinned: boolean;
+  published: boolean;
+  publishedAt: string;
+  expiresAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const NOTICE_CATEGORY_LABELS: Record<NoticeCategory, string> = {
+  general: "General",
+  placement: "Practical Placement",
+  finance: "Finance",
+  academic: "Academic",
+  event: "Event",
 };
 
 export const STATUS_LABELS: Record<string, string> = {

@@ -1,7 +1,7 @@
 import { Landmark } from "lucide-react";
 import type { PaymentInfo } from "@/lib/types";
 
-function formatMoney(amount: number, currency: string) {
+export function formatMoney(amount: number, currency: string) {
   return new Intl.NumberFormat("en-NG", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
 }
 

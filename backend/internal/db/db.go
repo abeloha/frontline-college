@@ -40,7 +40,9 @@ func Connect(cfg *config.Config) *gorm.DB {
 		&models.Student{},
 		&models.Application{},
 		&models.PaymentProof{},
+		&models.VirtualAccount{},
 		&models.AdmissionLetter{},
+		&models.Notice{},
 		&models.Admin{},
 	); err != nil {
 		log.Fatalf("db: automigrate failed: %v", err)

@@ -9,9 +9,11 @@ import (
 	"frontline-college/backend/internal/mail"
 	"frontline-college/backend/internal/middleware"
 	"frontline-college/backend/internal/models"
+	"frontline-college/backend/internal/razz"
 	"frontline-college/backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func fileURL(relPath string) string {
@@ -43,7 +45,9 @@ func Me(c *gin.Context) {
 func getOwnApplication(c *gin.Context) (*models.Application, bool) {
 	claims := middleware.GetClaims(c)
 	var app models.Application
-	err := db.DB.Preload("Program").Preload("Student").Preload("PaymentProofs").Preload("AdmissionLetter").
+	err := db.DB.Preload("Program").Preload("Student").Preload("PaymentProofs").
+		Preload("VirtualAccounts", func(db *gorm.DB) *gorm.DB { return db.Order("created_at DESC") }).
+		Preload("AdmissionLetter").
 		Where("student_id = ?", claims.UserID).First(&app).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no application found on your account"})
@@ -71,6 +75,10 @@ func MyApplication(c *gin.Context) {
 			"currency":             cfg.PaymentCurrency,
 			"applicationFeeAmount": cfg.ApplicationFeeAmount,
 			"schoolFeeAmount":      cfg.SchoolFeeAmount,
+			"paymentMethods": gin.H{
+				"manual": cfg.ManualPaymentEnabled,
+				"razz":   cfg.RazzPaymentEnabled,
+			},
 		},
 	})
 }
@@ -114,6 +122,11 @@ func UploadSchoolFeeProof(c *gin.Context) {
 }
 
 func handleProofUpload(c *gin.Context, app *models.Application, proofType, logLabel, subdir string, amount float64, nextStatus string) {
+	if pending := findPendingVirtualAccount(app.ID, proofType); pending != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "an automatic payment is already in progress for this fee — wait for it to complete or expire before uploading proof manually"})
+		return
+	}
+
 	cfg := config.Cfg
 	fh, err := c.FormFile("file")
 	if err != nil {
@@ -161,7 +174,7 @@ func AcceptAdmission(c *gin.Context) {
 	}
 	now := time.Now()
 	if err := db.DB.Model(&models.Application{}).Where("id = ?", app.ID).Updates(map[string]any{
-		"status":                 models.StatusAdmissionAccepted,
+		"status":                models.StatusAdmissionAccepted,
 		"admission_accepted_at": now,
 	}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not record admission acceptance"})
@@ -175,4 +188,133 @@ func AcceptAdmission(c *gin.Context) {
 	mail.Async(student.Email, student.FirstName, "Admission acceptance confirmed", mail.WrapTemplate("Admission Accepted", body))
 
 	c.JSON(http.StatusOK, gin.H{"message": "admission accepted"})
+}
+
+// findPendingVirtualAccount returns this application's currently pending,
+// unexpired virtual account for proofType, if any — used both to make
+// CreateVirtualAccount idempotent (don't mint a second disposable account
+// while one is still open) and to block a manual upload while an automatic
+// payment is in flight (see handleProofUpload).
+func findPendingVirtualAccount(applicationID uint, proofType string) *models.VirtualAccount {
+	var va models.VirtualAccount
+	err := db.DB.Where("application_id = ? AND type = ? AND status = ? AND expires_at > ?",
+		applicationID, proofType, models.VAStatusPending, time.Now()).
+		Order("created_at desc").First(&va).Error
+	if err != nil {
+		return nil
+	}
+	return &va
+}
+
+// uploadableStatusesFor returns the same stage gate handleProofUpload uses
+// for a given fee type, so CreateVirtualAccount enforces identical rules
+// about when each fee can be paid (once a manual proof moves the
+// application into a *_review status, both paths close together).
+func uploadableStatusesFor(proofType string) map[string]bool {
+	if proofType == models.PaymentTypeApplicationFee {
+		return applicationFeeUploadableStatuses
+	}
+	return schoolFeeUploadableStatuses
+}
+
+type virtualAccountRequest struct {
+	Type string `json:"type" binding:"required,oneof=application_fee school_fee"`
+}
+
+// CreateVirtualAccount issues (or returns the already-open) Razz virtual
+// account for one fee type on the caller's own application.
+// Route: POST /api/student/application/virtual-account
+func CreateVirtualAccount(c *gin.Context) {
+	cfg := config.Cfg
+	if !cfg.RazzPaymentEnabled {
+		c.JSON(http.StatusNotFound, gin.H{"error": "automatic payment is not available"})
+		return
+	}
+
+	app, ok := getOwnApplication(c)
+	if !ok {
+		return
+	}
+
+	var req virtualAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if !uploadableStatusesFor(req.Type)[app.Status] {
+		c.JSON(http.StatusConflict, gin.H{"error": "this fee cannot be paid at this stage"})
+		return
+	}
+
+	if existing := findPendingVirtualAccount(app.ID, req.Type); existing != nil {
+		c.JSON(http.StatusOK, gin.H{"virtualAccount": existing})
+		return
+	}
+
+	amount := cfg.ApplicationFeeAmount
+	label := "Application fee"
+	if req.Type == models.PaymentTypeSchoolFee {
+		amount = cfg.SchoolFeeAmount
+		label = "School fee"
+	}
+
+	var student models.Student
+	db.DB.First(&student, app.StudentID)
+
+	result, err := razz.CreateVirtualAccount(cfg, razz.CreateVirtualAccountInput{
+		AmountKobo:        int64(amount * 100),
+		CustomerReference: app.ApplicationNumber + "-" + req.Type,
+		Description:       label + " — " + app.ApplicationNumber,
+		PayerName:         student.FirstName + " " + student.LastName,
+		PayerEmail:        student.Email,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "could not create virtual account, please try again shortly"})
+		return
+	}
+
+	va := models.VirtualAccount{
+		ApplicationID: app.ID,
+		Type:          req.Type,
+		Reference:     result.Reference,
+		AccountNumber: result.AccountNumber,
+		BankName:      result.BankName,
+		Amount:        amount,
+		Status:        models.VAStatusPending,
+		ExpiresAt:     result.ExpiresAt,
+	}
+	if err := db.DB.Create(&va).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "virtual account created but failed to save — contact support"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"virtualAccount": va})
+}
+
+// GetVirtualAccount returns the caller's latest virtual account for a given
+// fee type — a pure read of local state. Only the Razz webhook
+// (RazzWebhookHandler) ever changes it; this exists so the portal can poll
+// for the moment it flips to "paid" without needing a live round trip to
+// Razz. Route: GET /api/student/application/virtual-account?type=...
+func GetVirtualAccount(c *gin.Context) {
+	app, ok := getOwnApplication(c)
+	if !ok {
+		return
+	}
+
+	vaType := c.Query("type")
+	if vaType != models.PaymentTypeApplicationFee && vaType != models.PaymentTypeSchoolFee {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid or missing type"})
+		return
+	}
+
+	var va models.VirtualAccount
+	if err := db.DB.Where("application_id = ? AND type = ?", app.ID, vaType).
+		Order("created_at desc").First(&va).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no virtual account found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"virtualAccount": va})
 }

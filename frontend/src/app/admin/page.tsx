@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Loader2, Search, Users, Clock, CheckCircle2, XCircle, GraduationCap } from "lucide-react";
+import { LogOut, Loader2, Search, Users, Clock, CheckCircle2, XCircle, GraduationCap, Megaphone } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
-import { Button } from "@/components/ui/Button";
+import { Button, LinkButton } from "@/components/ui/Button";
 import { StatusPill } from "@/components/admin/StatusPill";
 import { apiFetch, ApiError } from "@/lib/api";
 import { adminAuth } from "@/lib/auth";
@@ -90,9 +90,14 @@ export default function AdminDashboardPage() {
             <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">Admissions Dashboard</h1>
             <p className="mt-1 text-sm text-ink/50">Review, verify and decide on applications.</p>
           </div>
-          <Button variant="outline" onClick={logout}>
-            <LogOut className="size-4" /> Log out
-          </Button>
+          <div className="flex items-center gap-3">
+            <LinkButton href="/admin/notices" variant="outline" withArrow={false}>
+              <Megaphone className="size-4" /> Noticeboard
+            </LinkButton>
+            <Button variant="outline" onClick={logout}>
+              <LogOut className="size-4" /> Log out
+            </Button>
+          </div>
         </Reveal>
 
         {stats && (

@@ -27,6 +27,10 @@ func RegisterRoutes(r *gin.Engine, cfg *config.Config) {
 	api.POST("/auth/login", StudentLogin)
 	api.POST("/auth/admin/login", AdminLogin)
 
+	// Razz payment-collection callback — its own HMAC signature check is
+	// this route's entire auth, not a JWT (see RazzWebhookHandler).
+	api.POST("/webhooks/razz", RazzWebhookHandler)
+
 	api.GET("/files/*path", middleware.RequireAuth(""), ServeFile)
 
 	student := api.Group("/student")
@@ -37,6 +41,9 @@ func RegisterRoutes(r *gin.Engine, cfg *config.Config) {
 		student.POST("/application/payment-proof", UploadApplicationFeeProof)
 		student.POST("/application/accept-admission", AcceptAdmission)
 		student.POST("/application/school-fee-proof", UploadSchoolFeeProof)
+		student.POST("/application/virtual-account", CreateVirtualAccount)
+		student.GET("/application/virtual-account", GetVirtualAccount)
+		student.GET("/notices", ListStudentNotices)
 	}
 
 	admin := api.Group("/admin")
@@ -48,5 +55,9 @@ func RegisterRoutes(r *gin.Engine, cfg *config.Config) {
 		admin.POST("/applications/:id/verify-payment", VerifyPayment)
 		admin.POST("/applications/:id/decision", Decide)
 		admin.POST("/applications/:id/admission-letter", UploadAdmissionLetter)
+		admin.GET("/notices", ListNotices)
+		admin.POST("/notices", CreateNotice)
+		admin.PUT("/notices/:id", UpdateNotice)
+		admin.DELETE("/notices/:id", DeleteNotice)
 	}
 }

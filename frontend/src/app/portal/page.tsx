@@ -3,17 +3,42 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, LogOut, Download, FileCheck2, FileX2, FileClock, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  LogOut,
+  Download,
+  FileCheck2,
+  FileX2,
+  FileClock,
+  AlertTriangle,
+  User,
+  ClipboardList,
+  Wallet,
+  Briefcase,
+} from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
 import { StatusTimeline } from "@/components/portal/StatusTimeline";
 import { PaymentInfoCard } from "@/components/portal/PaymentInfoCard";
 import { FileUploadBox } from "@/components/portal/FileUploadBox";
+import { PaymentMethodPicker } from "@/components/portal/PaymentMethodPicker";
+import { VirtualAccountCard } from "@/components/portal/VirtualAccountCard";
+import { NoticeBoard } from "@/components/portal/NoticeBoard";
 import { apiFetch, ApiError, openAuthedFile } from "@/lib/api";
+import { createVirtualAccount, type FeeType } from "@/lib/payments";
 import { studentAuth } from "@/lib/auth";
 import { STATUS_LABELS, type Application, type PaymentInfo } from "@/lib/types";
 
 type MeApplicationResponse = { application: Application; paymentInfo: PaymentInfo };
+
+const TABS = [
+  { key: "personal", label: "Personal Information", icon: User },
+  { key: "result", label: "Result", icon: ClipboardList },
+  { key: "finance", label: "Finance", icon: Wallet },
+  { key: "placements", label: "Placements", icon: Briefcase },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
 
 export default function PortalPage() {
   const router = useRouter();
@@ -22,6 +47,9 @@ export default function PortalPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [acceptingAdmission, setAcceptingAdmission] = useState(false);
+  const [method, setMethod] = useState<"manual" | "razz" | null>(null);
+  const [creatingVA, setCreatingVA] = useState(false);
+  const [tab, setTab] = useState<TabKey>("personal");
 
   const load = useCallback(async () => {
     const token = studentAuth.get();
@@ -49,9 +77,37 @@ export default function PortalPage() {
     load();
   }, [load]);
 
+  // A fresh fee-collecting stage (a new application, or moving on to the
+  // school fee after accepting admission) should always start back at the
+  // method picker, not whatever was chosen for a previous stage.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMethod(null);
+  }, [data?.application.status]);
+
   function logout() {
     studentAuth.clear();
     router.push("/");
+  }
+
+  async function selectMethod(feeType: FeeType, chosen: "manual" | "razz") {
+    if (chosen === "manual") {
+      setMethod("manual");
+      return;
+    }
+    const token = studentAuth.get();
+    if (!token) return;
+    setCreatingVA(true);
+    setActionError(null);
+    try {
+      await createVirtualAccount(feeType, token);
+      setMethod("razz");
+      await load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Could not set up instant transfer.");
+    } finally {
+      setCreatingVA(false);
+    }
   }
 
   async function uploadApplicationFeeProof(file: File) {
@@ -117,6 +173,58 @@ export default function PortalPage() {
 
   const { application: app, paymentInfo } = data;
 
+  function renderPaymentSection(
+    feeType: FeeType,
+    uploadLabel: string,
+    onUpload: (file: File) => Promise<void>,
+  ) {
+    const methods = paymentInfo.paymentMethods;
+    const existingVA = app.virtualAccounts?.find(
+      (v) => v.type === feeType && v.status !== "expired",
+    );
+    if (existingVA) {
+      return (
+        <VirtualAccountCard
+          account={existingVA}
+          type={feeType}
+          currency={paymentInfo.currency}
+          token={studentAuth.get() || ""}
+          onPaid={load}
+        />
+      );
+    }
+
+    if (!methods.manual && !methods.razz) {
+      return (
+        <p className="text-sm text-ink/60">
+          Payment is temporarily unavailable — please contact admissions.
+        </p>
+      );
+    }
+
+    const chosen =
+      method ?? (methods.razz && !methods.manual ? "razz" : methods.manual ? "manual" : null);
+
+    if (!chosen) {
+      return <PaymentMethodPicker onSelect={(m) => selectMethod(feeType, m)} />;
+    }
+
+    if (chosen === "razz") {
+      return (
+        <div className="flex items-center gap-2 text-sm text-ink/60">
+          <Loader2 className="size-4 animate-spin" /> Setting up your instant transfer…
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <PaymentInfoCard info={paymentInfo} kind={feeType} />
+        <FileUploadBox label={uploadLabel} onUpload={onUpload} />
+      </>
+    );
+  }
+
   return (
     <section className="bg-ice-50 pb-24 pt-32 sm:pt-36">
       <div className="mx-auto max-w-4xl px-5 sm:px-8">
@@ -156,106 +264,193 @@ export default function PortalPage() {
           </Reveal>
         )}
 
-        {app.status === "submitted" && (
-          <Reveal delay={0.12} className="mt-8 space-y-6">
-            <PaymentInfoCard info={paymentInfo} kind="application_fee" />
-            <FileUploadBox label="Upload application fee payment proof" onUpload={uploadApplicationFeeProof} />
-          </Reveal>
-        )}
+        <Reveal delay={0.14} className="mt-8 flex flex-wrap gap-2 border-b border-ink/10">
+          {TABS.map((t) => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`inline-flex items-center gap-2 rounded-t-xl px-4 py-3 text-sm font-medium transition-colors ${
+                  active
+                    ? "border-b-2 border-primary-600 text-primary-700"
+                    : "border-b-2 border-transparent text-ink/45 hover:text-ink/70"
+                }`}
+              >
+                <t.icon className="size-4" /> {t.label}
+              </button>
+            );
+          })}
+        </Reveal>
 
-        {app.status === "application_fee_review" && (
-          <Reveal delay={0.12} className="mt-8 flex items-center gap-3 rounded-2xl bg-gold-400/10 px-5 py-4 text-sm font-medium text-ink/70">
-            <FileClock className="size-5 shrink-0 text-gold-400" />
-            Your application fee proof is being reviewed by our admissions team.
-          </Reveal>
-        )}
+        <div className="mt-8">
+          {tab === "personal" && (
+            <Reveal className="space-y-6">
+              <div className="rounded-3xl border border-ink/10 bg-white p-6 sm:p-8">
+                <h2 className="font-semibold text-ink">Personal Details</h2>
+                <dl className="mt-4 space-y-2.5 text-sm">
+                  <InfoRow label="Full Name" value={`${app.student?.firstName || ""} ${app.student?.lastName || ""}`.trim()} />
+                  <InfoRow label="Email" value={app.student?.email} />
+                  <InfoRow label="Phone" value={app.student?.phone} />
+                  <InfoRow label="Date of Birth" value={app.dateOfBirth} />
+                  <InfoRow label="Gender" value={app.gender} />
+                  <InfoRow label="State of Origin" value={app.stateOfOrigin} />
+                  <InfoRow label="Address" value={app.address} />
+                  <InfoRow label="Guardian" value={app.guardianName ? `${app.guardianName} (${app.guardianPhone})` : ""} />
+                </dl>
+              </div>
+              <div className="rounded-3xl border border-ink/10 bg-white p-6 sm:p-8">
+                <h2 className="font-semibold text-ink">Academic Background</h2>
+                <dl className="mt-4 space-y-2.5 text-sm">
+                  <InfoRow label="Programme" value={app.program?.name} />
+                  <InfoRow label="School Attended" value={app.schoolAttended} />
+                  <InfoRow label="Qualification" value={app.qualificationType} />
+                  <InfoRow label="Exam" value={app.examType ? `${app.examType} — ${app.examNumber}` : ""} />
+                  {app.subjects && <InfoRow label="Subjects" value={app.subjects} multiline />}
+                </dl>
+              </div>
+            </Reveal>
+          )}
 
-        {app.status === "under_review" && (
-          <Reveal delay={0.12} className="mt-8 flex items-center gap-3 rounded-2xl bg-primary-600/5 px-5 py-4 text-sm font-medium text-ink/70">
-            <FileClock className="size-5 shrink-0 text-primary-600" />
-            Your payment is confirmed — your application is now under review.
-          </Reveal>
-        )}
+          {tab === "result" && (
+            <Reveal className="flex items-center gap-3 rounded-3xl border border-ink/10 bg-white p-6 text-sm text-ink/60 sm:p-8">
+              <ClipboardList className="size-5 shrink-0 text-ink/30" />
+              Your results will be published here once released by the exams office.
+            </Reveal>
+          )}
 
-        {app.status === "accepted" && (
-          <Reveal delay={0.12} className="mt-8 space-y-6 rounded-3xl border border-primary-600/15 bg-primary-600/5 p-6 sm:p-8">
-            <h3 className="font-display text-xl font-semibold text-ink">Congratulations — you&apos;ve been accepted! 🎉</h3>
-            {app.admissionLetter ? (
-              <Button onClick={() => viewFile(app.admissionLetter!.fileUrl)}>
-                <Download className="size-4" /> View admission letter
-              </Button>
-            ) : (
-              <p className="text-sm text-ink/60">Your admission letter will appear here shortly.</p>
-            )}
-            <div>
-              <Button variant="accent" onClick={acceptAdmission} disabled={acceptingAdmission || !app.admissionLetter}>
-                {acceptingAdmission ? <Loader2 className="size-4 animate-spin" /> : "Accept my admission"}
-              </Button>
-            </div>
-          </Reveal>
-        )}
+          {tab === "finance" && (
+            <Reveal className="space-y-6">
+              {app.status === "submitted" &&
+                renderPaymentSection(
+                  "application_fee",
+                  "Upload application fee payment proof",
+                  uploadApplicationFeeProof,
+                )}
 
-        {app.status === "admission_accepted" && (
-          <Reveal delay={0.12} className="mt-8 space-y-6">
-            {app.admissionLetter && (
-              <Button variant="outline" onClick={() => viewFile(app.admissionLetter!.fileUrl)}>
-                <Download className="size-4" /> View admission letter
-              </Button>
-            )}
-            <PaymentInfoCard info={paymentInfo} kind="school_fee" />
-            <FileUploadBox label="Upload school fee payment proof" onUpload={uploadSchoolFeeProof} />
-          </Reveal>
-        )}
+              {app.status === "application_fee_review" && (
+                <div className="flex items-center gap-3 rounded-2xl bg-gold-400/10 px-5 py-4 text-sm font-medium text-ink/70">
+                  <FileClock className="size-5 shrink-0 text-gold-400" />
+                  Your application fee proof is being reviewed by our admissions team.
+                </div>
+              )}
 
-        {app.status === "school_fee_review" && (
-          <Reveal delay={0.12} className="mt-8 flex items-center gap-3 rounded-2xl bg-gold-400/10 px-5 py-4 text-sm font-medium text-ink/70">
-            <FileClock className="size-5 shrink-0 text-gold-400" />
-            Your school fee payment proof is being reviewed.
-          </Reveal>
-        )}
+              {app.status === "under_review" && (
+                <div className="flex items-center gap-3 rounded-2xl bg-primary-600/5 px-5 py-4 text-sm font-medium text-ink/70">
+                  <FileClock className="size-5 shrink-0 text-primary-600" />
+                  Your payment is confirmed — your application is now under review.
+                </div>
+              )}
 
-        {app.status === "enrolled" && (
-          <Reveal delay={0.12} className="mt-8 flex items-center gap-3 rounded-3xl border border-primary-600/15 bg-primary-600/5 p-6 text-ink/70">
-            <FileCheck2 className="size-6 shrink-0 text-primary-600" />
-            <p className="text-sm">
-              You&apos;re officially enrolled at Frontline College! Resumption details will be sent to your email.
-            </p>
-          </Reveal>
-        )}
-
-        {(app.paymentProofs?.length ?? 0) > 0 && (
-          <Reveal delay={0.16} className="mt-10">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-ink/40">Payment history</h3>
-            <div className="mt-4 space-y-3">
-              {app.paymentProofs!.map((p) => (
-                <div key={p.id} className="flex items-center justify-between rounded-2xl border border-ink/10 bg-white px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    {p.status === "verified" ? (
-                      <FileCheck2 className="size-4 text-primary-600" />
-                    ) : p.status === "rejected" ? (
-                      <FileX2 className="size-4 text-accent-500" />
-                    ) : (
-                      <FileClock className="size-4 text-gold-400" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-ink">
-                        {p.type === "application_fee" ? "Application Fee" : "School Fee"}
-                      </p>
-                      <p className="text-xs text-ink/45">{new Date(p.uploadedAt).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium capitalize text-ink/50">{p.status}</span>
-                    <button onClick={() => viewFile(p.fileUrl)} className="text-xs font-semibold text-primary-600 hover:underline">
-                      View
-                    </button>
+              {app.status === "accepted" && (
+                <div className="space-y-6 rounded-3xl border border-primary-600/15 bg-primary-600/5 p-6 sm:p-8">
+                  <h3 className="font-display text-xl font-semibold text-ink">Congratulations — you&apos;ve been accepted! 🎉</h3>
+                  {app.admissionLetter ? (
+                    <Button onClick={() => viewFile(app.admissionLetter!.fileUrl)}>
+                      <Download className="size-4" /> View admission letter
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-ink/60">Your admission letter will appear here shortly.</p>
+                  )}
+                  <div>
+                    <Button variant="accent" onClick={acceptAdmission} disabled={acceptingAdmission || !app.admissionLetter}>
+                      {acceptingAdmission ? <Loader2 className="size-4 animate-spin" /> : "Accept my admission"}
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </Reveal>
-        )}
+              )}
+
+              {app.status === "admission_accepted" && (
+                <div className="space-y-6">
+                  {app.admissionLetter && (
+                    <Button variant="outline" onClick={() => viewFile(app.admissionLetter!.fileUrl)}>
+                      <Download className="size-4" /> View admission letter
+                    </Button>
+                  )}
+                  {renderPaymentSection(
+                    "school_fee",
+                    "Upload school fee payment proof",
+                    uploadSchoolFeeProof,
+                  )}
+                </div>
+              )}
+
+              {app.status === "school_fee_review" && (
+                <div className="flex items-center gap-3 rounded-2xl bg-gold-400/10 px-5 py-4 text-sm font-medium text-ink/70">
+                  <FileClock className="size-5 shrink-0 text-gold-400" />
+                  Your school fee payment proof is being reviewed.
+                </div>
+              )}
+
+              {app.status === "enrolled" && (
+                <div className="flex items-center gap-3 rounded-3xl border border-primary-600/15 bg-primary-600/5 p-6 text-ink/70">
+                  <FileCheck2 className="size-6 shrink-0 text-primary-600" />
+                  <p className="text-sm">
+                    You&apos;re officially enrolled at Frontline College! Resumption details will be sent to your email.
+                  </p>
+                </div>
+              )}
+
+              {["rejected", "application_fee_review"].includes(app.status) && !app.paymentProofs?.length && (
+                <p className="text-sm text-ink/50">No fee payment is due at this stage.</p>
+              )}
+
+              {(app.paymentProofs?.length ?? 0) > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-ink/40">Payment history</h3>
+                  <div className="mt-4 space-y-3">
+                    {app.paymentProofs!.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between rounded-2xl border border-ink/10 bg-white px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          {p.status === "verified" ? (
+                            <FileCheck2 className="size-4 text-primary-600" />
+                          ) : p.status === "rejected" ? (
+                            <FileX2 className="size-4 text-accent-500" />
+                          ) : (
+                            <FileClock className="size-4 text-gold-400" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-ink">
+                              {p.type === "application_fee" ? "Application Fee" : "School Fee"}
+                              {!p.fileUrl && (
+                                <span className="ml-2 text-xs font-normal text-primary-600">via Razz</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-ink/45">{new Date(p.uploadedAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-medium capitalize text-ink/50">{p.status}</span>
+                          {p.fileUrl && (
+                            <button onClick={() => viewFile(p.fileUrl)} className="text-xs font-semibold text-primary-600 hover:underline">
+                              View
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Reveal>
+          )}
+
+          {tab === "placements" && (
+            <Reveal>
+              <NoticeBoard />
+            </Reveal>
+          )}
+        </div>
       </div>
     </section>
+  );
+}
+
+function InfoRow({ label, value, multiline }: { label: string; value?: string; multiline?: boolean }) {
+  return (
+    <div className="flex justify-between gap-4 border-b border-ink/5 pb-2.5 last:border-0">
+      <dt className="shrink-0 text-ink/45">{label}</dt>
+      <dd className={`text-right font-medium text-ink ${multiline ? "whitespace-pre-line" : ""}`}>{value || "—"}</dd>
+    </div>
   );
 }

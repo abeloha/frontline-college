@@ -101,11 +101,7 @@ func VerifyPayment(c *gin.Context) {
 
 	if req.Action == "verify" {
 		newProofStatus = models.PaymentStatusVerified
-		if proof.Type == models.PaymentTypeApplicationFee {
-			newAppStatus = models.StatusUnderReview
-		} else {
-			newAppStatus = models.StatusEnrolled
-		}
+		newAppStatus = models.NextStatusAfterVerifiedPayment(proof.Type)
 	} else {
 		if proof.Type == models.PaymentTypeApplicationFee {
 			newAppStatus = models.StatusSubmitted
