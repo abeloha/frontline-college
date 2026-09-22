@@ -17,3 +17,11 @@ export function getVirtualAccount(type: FeeType, token: string) {
     { token },
   );
 }
+
+export function cancelVirtualAccount(type: FeeType, token: string) {
+  return apiFetch<{ message: string }>("/student/application/virtual-account/cancel", {
+    method: "POST",
+    token,
+    body: { type },
+  });
+}

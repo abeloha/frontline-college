@@ -51,6 +51,23 @@ const (
 	StatusEnrolled             = "enrolled"               // school fee verified, done
 )
 
+// admittedStatuses are the statuses reached only once an application has
+// been accepted — used to gate Notice.AudienceAdmitted content (e.g. a
+// practical placement posting) away from applicants who haven't been
+// admitted yet.
+var admittedStatuses = map[string]bool{
+	StatusAccepted:          true,
+	StatusAdmissionAccepted: true,
+	StatusSchoolFeeReview:   true,
+	StatusEnrolled:          true,
+}
+
+// IsAdmittedStatus reports whether an application has progressed far enough
+// to count as "admitted" for Notice audience targeting.
+func IsAdmittedStatus(status string) bool {
+	return admittedStatuses[status]
+}
+
 // Application is one applicant's admission attempt for a single program.
 type Application struct {
 	ID                uint    `gorm:"primaryKey" json:"id"`
@@ -214,16 +231,34 @@ var NoticeCategories = map[string]bool{
 	NoticeCategoryEvent:     true,
 }
 
+const (
+	// NoticeAudienceAll is visible to every signed-up applicant, admitted or
+	// not — the default.
+	NoticeAudienceAll = "all"
+	// NoticeAudienceAdmitted is visible only once an applicant's own
+	// application has reached an admitted status (see IsAdmittedStatus) —
+	// for content, like a placement posting, that shouldn't leak to
+	// applicants who haven't been accepted yet.
+	NoticeAudienceAdmitted = "admitted"
+)
+
+// NoticeAudiences is the allow-list mirroring NoticeCategories above.
+var NoticeAudiences = map[string]bool{
+	NoticeAudienceAll:      true,
+	NoticeAudienceAdmitted: true,
+}
+
 // Notice is a noticeboard post an admin publishes for students — anything
 // from a general announcement to a practical placement posting. ProgramID
 // is nil for a notice every student sees, or set to target only students
 // enrolled in one Program (e.g. a placement posting for one course of
-// study).
+// study). Audience further restricts it to admitted students only.
 type Notice struct {
 	ID          uint       `gorm:"primaryKey" json:"id"`
 	Title       string     `gorm:"size:200" json:"title"`
 	Body        string     `gorm:"type:text" json:"body"`
 	Category    string     `gorm:"size:30;index" json:"category"`
+	Audience    string     `gorm:"size:20;index;default:all" json:"audience"`
 	ProgramID   *uint      `gorm:"index" json:"programId,omitempty"`
 	Program     *Program   `json:"program,omitempty"`
 	FilePath    string     `gorm:"size:255" json:"-"`

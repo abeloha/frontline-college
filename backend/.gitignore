@@ -1,6 +1,7 @@
 .env
 .env.prod
 /uploads/**
+/storage/
 !/uploads/**/.gitkeep
 /tmp/
 frontline-college-api

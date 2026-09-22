@@ -56,6 +56,12 @@ type Config struct {
 
 	UploadDir   string
 	MaxUploadMB int64
+
+	// LogPath is where every request/response to a third-party API (Razz,
+	// ...) and every inbound webhook gets written, one file per calendar
+	// day — see internal/requestlog. Mirrors the Razz API's own LOG_PATH
+	// convention.
+	LogPath string
 }
 
 var Cfg *Config
@@ -107,6 +113,8 @@ func Load() *Config {
 
 		UploadDir:   getEnv("UPLOAD_DIR", "./uploads"),
 		MaxUploadMB: int64(getEnvInt("MAX_UPLOAD_MB", 5)),
+
+		LogPath: getEnv("LOG_PATH", "./storage/logs"),
 	}
 
 	return Cfg

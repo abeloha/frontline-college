@@ -13,7 +13,7 @@ export default function Home() {
       <Stats />
       <AboutTeaser />
       <ProgramsTeaser />
-      <FacilitiesGallery />
+      {/* <FacilitiesGallery /> */}
       <WhyChoose />
       <AdmissionsCTA />
     </>

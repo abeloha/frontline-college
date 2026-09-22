@@ -27,6 +27,7 @@ type noticeForm struct {
 	Title     string
 	Body      string
 	Category  string
+	Audience  string
 	ProgramID *uint
 	Pinned    bool
 	Published bool
@@ -38,6 +39,7 @@ func parseNoticeForm(c *gin.Context, requireTitle bool) (noticeForm, bool) {
 	f.Title = c.PostForm("title")
 	f.Body = c.PostForm("body")
 	f.Category = c.DefaultPostForm("category", models.NoticeCategoryGeneral)
+	f.Audience = c.DefaultPostForm("audience", models.NoticeAudienceAll)
 	f.Pinned = c.PostForm("pinned") == "true"
 	f.Published = c.DefaultPostForm("published", "true") == "true"
 
@@ -47,6 +49,10 @@ func parseNoticeForm(c *gin.Context, requireTitle bool) (noticeForm, bool) {
 	}
 	if !models.NoticeCategories[f.Category] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category"})
+		return f, false
+	}
+	if !models.NoticeAudiences[f.Audience] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid audience"})
 		return f, false
 	}
 	if pid := c.PostForm("programId"); pid != "" {
@@ -81,6 +87,9 @@ func ListNotices(c *gin.Context) {
 	if programID := c.Query("programId"); programID != "" {
 		query = query.Where("program_id = ?", programID)
 	}
+	if audience := c.Query("audience"); audience != "" {
+		query = query.Where("audience = ?", audience)
+	}
 
 	var notices []models.Notice
 	if err := query.Order("pinned DESC, created_at DESC").Find(&notices).Error; err != nil {
@@ -106,6 +115,7 @@ func CreateNotice(c *gin.Context) {
 		Title:       f.Title,
 		Body:        f.Body,
 		Category:    f.Category,
+		Audience:    f.Audience,
 		ProgramID:   f.ProgramID,
 		Pinned:      f.Pinned,
 		Published:   f.Published,
@@ -150,6 +160,7 @@ func UpdateNotice(c *gin.Context) {
 		"title":      f.Title,
 		"body":       f.Body,
 		"category":   f.Category,
+		"audience":   f.Audience,
 		"program_id": f.ProgramID,
 		"pinned":     f.Pinned,
 		"published":  f.Published,
@@ -198,14 +209,16 @@ func DeleteNotice(c *gin.Context) {
 
 // ListStudentNotices returns the notices visible to the caller: every
 // unscoped (ProgramID nil) live notice, plus any scoped to the program of
-// the student's own application. A student without an application yet
-// (shouldn't normally reach the portal, but the endpoint shouldn't 500 if
-// they do) simply sees the unscoped ones.
+// the student's own application, minus anything audience-restricted to
+// admitted students if this student isn't one yet. A student without an
+// application yet (shouldn't normally reach the portal, but the endpoint
+// shouldn't 500 if they do) simply sees the unscoped, all-audience ones.
 func ListStudentNotices(c *gin.Context) {
 	claims := middleware.GetClaims(c)
 
 	var app models.Application
 	hasApp := db.DB.Where("student_id = ?", claims.UserID).First(&app).Error == nil
+	isAdmitted := hasApp && models.IsAdmittedStatus(app.Status)
 
 	query := db.DB.Model(&models.Notice{}).Preload("Program").
 		Where("published = ?", true).
@@ -215,6 +228,13 @@ func ListStudentNotices(c *gin.Context) {
 		query = query.Where("program_id IS NULL OR program_id = ?", app.ProgramID)
 	} else {
 		query = query.Where("program_id IS NULL")
+	}
+
+	if !isAdmitted {
+		// Anything not explicitly admitted-only counts as public — covers
+		// both NoticeAudienceAll and any pre-migration row with a blank
+		// audience column.
+		query = query.Where("audience != ?", models.NoticeAudienceAdmitted)
 	}
 
 	if category := c.Query("category"); category != "" {

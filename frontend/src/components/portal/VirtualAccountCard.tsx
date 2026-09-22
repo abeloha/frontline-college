@@ -23,15 +23,18 @@ export function VirtualAccountCard({
   currency,
   token,
   onPaid,
+  onCancel,
 }: {
   account: VirtualAccount;
   type: FeeType;
   currency: string;
   token: string;
   onPaid: () => void;
+  onCancel?: () => void | Promise<void>;
 }) {
   const [va, setVa] = useState(account);
   const [copied, setCopied] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [, forceTick] = useState(0);
   const onPaidRef = useRef(onPaid);
   onPaidRef.current = onPaid;
@@ -64,6 +67,16 @@ export function VirtualAccountCard({
     navigator.clipboard.writeText(va.accountNumber).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleCancel() {
+    if (!onCancel) return;
+    setCancelling(true);
+    try {
+      await onCancel();
+    } finally {
+      setCancelling(false);
+    }
   }
 
   if (va.status === "paid") {
@@ -128,6 +141,16 @@ export function VirtualAccountCard({
             <span className="size-2 animate-pulse rounded-full bg-gold-400" />
             Waiting for your transfer — this page updates automatically once it's received.
           </p>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="mt-4 text-xs font-semibold text-ink/40 hover:text-ink/70 disabled:opacity-50"
+            >
+              {cancelling ? "Cancelling…" : "Picked this by mistake? Choose a different payment method"}
+            </button>
+          )}
         </>
       )}
     </div>

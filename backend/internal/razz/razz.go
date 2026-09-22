@@ -18,9 +18,78 @@ import (
 	"time"
 
 	"frontline-college/backend/internal/config"
+	"frontline-college/backend/internal/requestlog"
 )
 
 var httpClient = &http.Client{Timeout: 15 * time.Second}
+
+// namespace is requestlog's top-level directory for every Razz call —
+// outbound requests land under {LOG_PATH}/razz/<operation>/, matching the
+// Razz API's own storage/logs/vfd/<operation>/ convention.
+const namespace = "razz"
+
+// doRequest performs one HTTP round trip to Razz and unconditionally logs
+// it (request + response, or the error if the round trip itself failed) via
+// requestlog.LogCall before returning — every Razz call must go through
+// this so none can be added later without being logged.
+func doRequest(operation, method, url string, body interface{}, apiKey string) (int, []byte, error) {
+	start := time.Now()
+
+	var bodyBytes []byte
+	if body != nil {
+		var err error
+		bodyBytes, err = json.Marshal(body)
+		if err != nil {
+			return 0, nil, fmt.Errorf("razz: marshal request failed: %w", err)
+		}
+	}
+
+	req, err := http.NewRequest(method, url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return 0, nil, fmt.Errorf("razz: build request failed: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	// Logged headers never include the real API key — same masking
+	// convention as the Razz API's own vfd.go (maskToken).
+	logHeaders := map[string]string{"Content-Type": "application/json"}
+	if apiKey != "" {
+		logHeaders["Authorization"] = "Bearer " + maskToken(apiKey)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		requestlog.LogCall(namespace, operation, method, url, logHeaders, json.RawMessage(bodyOrNull(bodyBytes)), 0, "", time.Since(start), err)
+		return 0, nil, fmt.Errorf("razz: %s request failed: %w", operation, err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		requestlog.LogCall(namespace, operation, method, url, logHeaders, json.RawMessage(bodyOrNull(bodyBytes)), resp.StatusCode, "", time.Since(start), err)
+		return resp.StatusCode, nil, fmt.Errorf("razz: reading response failed: %w", err)
+	}
+
+	requestlog.LogCall(namespace, operation, method, url, logHeaders, json.RawMessage(bodyOrNull(bodyBytes)), resp.StatusCode, string(respBytes), time.Since(start), nil)
+	return resp.StatusCode, respBytes, nil
+}
+
+func bodyOrNull(b []byte) []byte {
+	if len(b) == 0 {
+		return []byte("null")
+	}
+	return b
+}
+
+func maskToken(tok string) string {
+	if len(tok) <= 6 {
+		return "***"
+	}
+	return "***" + tok[len(tok)-6:]
+}
 
 // CreateVirtualAccountInput is everything needed to request one disposable
 // account. AmountKobo is kobo (Razz's public API contract), not Naira.
@@ -60,27 +129,10 @@ func CreateVirtualAccount(cfg *config.Config, in CreateVirtualAccountInput) (*Cr
 		payload["payer_email"] = in.PayerEmail
 	}
 
-	body, err := json.Marshal(payload)
+	url := strings.TrimRight(cfg.RazzAPIBaseURL, "/") + "/virtual-accounts"
+	status, respBytes, err := doRequest("create_virtual_account", http.MethodPost, url, payload, cfg.RazzAPIKey)
 	if err != nil {
-		return nil, fmt.Errorf("razz: marshal request failed: %w", err)
-	}
-
-	req, err := http.NewRequest(http.MethodPost, strings.TrimRight(cfg.RazzAPIBaseURL, "/")+"/virtual-accounts", bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("razz: build request failed: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+cfg.RazzAPIKey)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("razz: create virtual account request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("razz: reading response failed: %w", err)
+		return nil, err
 	}
 
 	var parsed struct {
@@ -95,15 +147,15 @@ func CreateVirtualAccount(cfg *config.Config, in CreateVirtualAccountInput) (*Cr
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(respBytes, &parsed); err != nil {
-		return nil, fmt.Errorf("razz: parsing response failed (http %d): %w", resp.StatusCode, err)
+		return nil, fmt.Errorf("razz: parsing response failed (http %d): %w", status, err)
 	}
-	if !parsed.Status || resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if !parsed.Status || status < 200 || status >= 300 {
 		msg := parsed.Error
 		if msg == "" {
 			msg = parsed.Message
 		}
 		if msg == "" {
-			msg = fmt.Sprintf("http %d", resp.StatusCode)
+			msg = fmt.Sprintf("http %d", status)
 		}
 		return nil, fmt.Errorf("razz: create virtual account failed: %s", msg)
 	}

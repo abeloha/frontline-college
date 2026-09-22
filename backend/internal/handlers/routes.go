@@ -43,6 +43,7 @@ func RegisterRoutes(r *gin.Engine, cfg *config.Config) {
 		student.POST("/application/school-fee-proof", UploadSchoolFeeProof)
 		student.POST("/application/virtual-account", CreateVirtualAccount)
 		student.GET("/application/virtual-account", GetVirtualAccount)
+		student.POST("/application/virtual-account/cancel", CancelVirtualAccount)
 		student.GET("/notices", ListStudentNotices)
 	}
 

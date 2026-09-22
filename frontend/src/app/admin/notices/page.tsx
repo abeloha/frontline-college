@@ -8,14 +8,23 @@ import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
 import { apiFetch, ApiError, openAuthedFile } from "@/lib/api";
 import { adminAuth } from "@/lib/auth";
-import { NOTICE_CATEGORY_LABELS, type Notice, type NoticeCategory, type Program } from "@/lib/types";
+import {
+  NOTICE_CATEGORY_LABELS,
+  NOTICE_AUDIENCE_LABELS,
+  type Notice,
+  type NoticeCategory,
+  type NoticeAudience,
+  type Program,
+} from "@/lib/types";
 
 const CATEGORY_OPTIONS = Object.entries(NOTICE_CATEGORY_LABELS) as [NoticeCategory, string][];
+const AUDIENCE_OPTIONS = Object.entries(NOTICE_AUDIENCE_LABELS) as [NoticeAudience, string][];
 
 type FormState = {
   title: string;
   body: string;
   category: NoticeCategory;
+  audience: NoticeAudience;
   programId: string;
   pinned: boolean;
   published: boolean;
@@ -26,6 +35,7 @@ const EMPTY_FORM: FormState = {
   title: "",
   body: "",
   category: "general",
+  audience: "all",
   programId: "",
   pinned: false,
   published: true,
@@ -88,6 +98,7 @@ export default function AdminNoticesPage() {
       title: n.title,
       body: n.body,
       category: n.category,
+      audience: n.audience,
       programId: n.programId ? String(n.programId) : "",
       pinned: n.pinned,
       published: n.published,
@@ -111,6 +122,7 @@ export default function AdminNoticesPage() {
       fd.append("title", form.title);
       fd.append("body", form.body);
       fd.append("category", form.category);
+      fd.append("audience", form.audience);
       fd.append("pinned", String(form.pinned));
       fd.append("published", String(form.published));
       if (form.programId) fd.append("programId", form.programId);
@@ -142,6 +154,7 @@ export default function AdminNoticesPage() {
       fd.append("title", n.title);
       fd.append("body", n.body);
       fd.append("category", n.category);
+      fd.append("audience", n.audience);
       fd.append("pinned", String(n.pinned));
       fd.append("published", String(!n.published));
       if (n.programId) fd.append("programId", String(n.programId));
@@ -246,6 +259,21 @@ export default function AdminNoticesPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5 text-sm text-ink/70">
+                  <span className="text-ink/45">Visible to</span>
+                  <select
+                    value={form.audience}
+                    onChange={(e) => setForm((f) => ({ ...f, audience: e.target.value as NoticeAudience }))}
+                    className="rounded-xl border border-ink/12 bg-white px-4 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  >
+                    {AUDIENCE_OPTIONS.map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="flex items-center gap-2 text-sm text-ink/70">
                   <span className="text-ink/45">Expires (optional)</span>
                   <input
@@ -308,6 +336,11 @@ export default function AdminNoticesPage() {
                         <span className="rounded-full bg-primary-600/10 px-2.5 py-0.5 text-xs font-medium text-primary-700">
                           {NOTICE_CATEGORY_LABELS[n.category]}
                         </span>
+                        {n.audience === "admitted" && (
+                          <span className="rounded-full bg-gold-400/15 px-2.5 py-0.5 text-xs font-medium text-gold-400">
+                            Admitted students only
+                          </span>
+                        )}
                         {!n.published && (
                           <span className="rounded-full bg-ink/10 px-2.5 py-0.5 text-xs font-medium text-ink/50">Draft</span>
                         )}

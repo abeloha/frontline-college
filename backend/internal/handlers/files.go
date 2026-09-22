@@ -66,8 +66,9 @@ func ServeFile(c *gin.Context) {
 }
 
 // canViewNoticeFile mirrors the visibility rules in ListStudentNotices — an
-// admin can see any attachment, a student only one that is live and either
-// unscoped or scoped to their own application's program.
+// admin can see any attachment, a student only one that is live, either
+// unscoped or scoped to their own application's program, and not
+// admitted-only unless their own application has reached an admitted status.
 func canViewNoticeFile(claims *auth.Claims, notice *models.Notice) bool {
 	if claims.Role == auth.RoleAdmin {
 		return true
@@ -75,12 +76,13 @@ func canViewNoticeFile(claims *auth.Claims, notice *models.Notice) bool {
 	if !notice.IsLive() {
 		return false
 	}
+	var app models.Application
+	hasApp := db.DB.Where("student_id = ?", claims.UserID).First(&app).Error == nil
+	if notice.Audience == models.NoticeAudienceAdmitted && !(hasApp && models.IsAdmittedStatus(app.Status)) {
+		return false
+	}
 	if notice.ProgramID == nil {
 		return true
 	}
-	var app models.Application
-	if err := db.DB.Where("student_id = ?", claims.UserID).First(&app).Error; err != nil {
-		return false
-	}
-	return app.ProgramID == *notice.ProgramID
+	return hasApp && app.ProgramID == *notice.ProgramID
 }

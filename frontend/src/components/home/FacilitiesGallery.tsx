@@ -17,7 +17,7 @@ export function FacilitiesGallery() {
           eyebrow="Campus & Facilities"
           align="center"
           title="Learning environments built for practice, not just theory."
-          description="Placeholder photography — swap in real campus photos any time before launch."
+          description=""
         />
 
         <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:auto-rows-[220px]">

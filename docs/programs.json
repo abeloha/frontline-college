@@ -1,0 +1,80 @@
+[
+    {
+        "id": 5,
+        "slug": "health-education-and-promotion",
+        "name": "Health Education and Promotion (HEP)",
+        "category": "National Diploma",
+        "durationYears": 3,
+        "summary": "Equips graduates to design and deliver health education campaigns that build healthier communities through behaviour change.",
+        "coreDuties": "Designing health education materials, running community awareness campaigns, training peer educators, and evaluating public health promotion programs.",
+        "placesOfWork": "Ministries of Health, hospitals, NGOs, corporate wellness departments, and international health agencies.",
+        "imageUrl": "/images/program-hep.jpg",
+        "createdAt": "2026-09-02T14:55:58.903+01:00",
+        "updatedAt": "2026-09-02T14:57:58.774+01:00"
+    },
+    {
+        "id": 4,
+        "slug": "public-health-technicians",
+        "name": "Public Health Technicians (PHT)",
+        "category": "National Diploma",
+        "durationYears": 3,
+        "summary": "Prepares public health technicians to diagnose community health needs, manage sanitation safety, and lead disease prevention initiatives.",
+        "coreDuties": "Performing comprehensive community health diagnoses, collecting and evaluating local epidemiologic data, managing water and sanitation safety, and implementing infectious disease prevention initiatives.",
+        "placesOfWork": "Ministries of Health, environmental protection agencies, waste management and water treatment facilities, corporate health departments, and international public health agencies.",
+        "imageUrl": "/images/program-pht.jpg",
+        "createdAt": "2026-09-02T14:55:58.808+01:00",
+        "updatedAt": "2026-09-02T14:57:58.761+01:00"
+    },
+    {
+        "id": 3,
+        "slug": "junior-chew",
+        "name": "Certificate/Diploma in Junior Community Health Extension Worker (JCHEW)",
+        "category": "Professional Diploma",
+        "durationYears": 2,
+        "summary": "An entry-level certificate pathway into community health work, preparing graduates for grassroots primary care roles.",
+        "coreDuties": "Basic primary care support, health education, immunization outreach, and community health data collection.",
+        "placesOfWork": "Primary Healthcare Centers (PHCs), community outreach programs, NGOs.",
+        "imageUrl": "/images/program-jchew.jpg",
+        "createdAt": "2026-09-02T14:55:58.756+01:00",
+        "updatedAt": "2026-09-02T14:57:58.746+01:00"
+    },
+    {
+        "id": 1,
+        "slug": "community-health-extension-workers",
+        "name": "Community Health Extension Workers (CHEW)",
+        "category": "Professional Diploma",
+        "durationYears": 3,
+        "summary": "Trains frontline health workers who deliver primary clinical care and drive grassroots health campaigns across underserved communities.",
+        "coreDuties": "Providing essential primary clinical care, conducting maternal and child health services (immunizations, antenatal care, family planning), managing minor illnesses, and coordinating grassroots health campaigns.",
+        "placesOfWork": "Primary Healthcare Centers (PHCs), local government health departments, general and teaching hospitals, and community-focused NGOs.",
+        "imageUrl": "/images/program-chew.jpg",
+        "createdAt": "2026-09-02T14:55:58.563+01:00",
+        "updatedAt": "2026-09-02T14:57:58.702+01:00"
+    },
+    {
+        "id": 6,
+        "slug": "environmental-health-technology",
+        "name": "Environmental Health Technology (EHT)",
+        "category": "Professional Diploma",
+        "durationYears": 3,
+        "summary": "Focuses on preventing disease by controlling environmental factors — ensuring air, water, food, housing, and workplaces are safe.",
+        "coreDuties": "Ensuring that air, water, food, housing, and workplaces are safe so that people don't get sick; inspecting facilities and enforcing sanitation standards.",
+        "placesOfWork": "LGA Environmental Departments, State Ministries of Health, hospitals, and NGOs.",
+        "imageUrl": "/images/program-eht.jpg",
+        "createdAt": "2026-09-02T14:55:58.982+01:00",
+        "updatedAt": "2026-09-02T14:57:58.796+01:00"
+    },
+    {
+        "id": 2,
+        "slug": "retraining-chew",
+        "name": "Retraining Diploma in Community Health Extension Workers (CHEW)",
+        "category": "Professional Diploma",
+        "durationYears": 1,
+        "summary": "A refresher and upskilling track for practicing CHEWs to update their clinical knowledge and meet current regulatory standards.",
+        "coreDuties": "Updated primary care protocols, maternal and child health best practices, and modern community health campaign coordination.",
+        "placesOfWork": "Primary Healthcare Centers (PHCs), local government health departments, general and teaching hospitals.",
+        "imageUrl": "/images/program-chew-retraining.jpg",
+        "createdAt": "2026-09-02T14:55:58.633+01:00",
+        "updatedAt": "2026-09-02T14:57:58.721+01:00"
+    }
+]

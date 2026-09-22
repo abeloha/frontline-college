@@ -7,6 +7,7 @@ import (
 	"frontline-college/backend/internal/config"
 	"frontline-college/backend/internal/db"
 	"frontline-college/backend/internal/handlers"
+	"frontline-college/backend/internal/requestlog"
 	"frontline-college/backend/internal/seed"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,7 @@ import (
 
 func main() {
 	cfg := config.Load()
+	requestlog.Init(cfg.LogPath)
 
 	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
 		log.Fatalf("main: could not create upload dir: %v", err)

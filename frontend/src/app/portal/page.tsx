@@ -14,7 +14,8 @@ import {
   User,
   ClipboardList,
   Wallet,
-  Briefcase,
+  Megaphone,
+  CircleDollarSign,
 } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
@@ -25,7 +26,7 @@ import { PaymentMethodPicker } from "@/components/portal/PaymentMethodPicker";
 import { VirtualAccountCard } from "@/components/portal/VirtualAccountCard";
 import { NoticeBoard } from "@/components/portal/NoticeBoard";
 import { apiFetch, ApiError, openAuthedFile } from "@/lib/api";
-import { createVirtualAccount, type FeeType } from "@/lib/payments";
+import { createVirtualAccount, cancelVirtualAccount, type FeeType } from "@/lib/payments";
 import { studentAuth } from "@/lib/auth";
 import { STATUS_LABELS, type Application, type PaymentInfo } from "@/lib/types";
 
@@ -35,10 +36,29 @@ const TABS = [
   { key: "personal", label: "Personal Information", icon: User },
   { key: "result", label: "Result", icon: ClipboardList },
   { key: "finance", label: "Finance", icon: Wallet },
-  { key: "placements", label: "Placements", icon: Briefcase },
+  { key: "notices", label: "Noticeboard", icon: Megaphone },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
+
+// Statuses where the application is stalled on the student taking a fee (or
+// fee-adjacent) action — surfaced as a banner right under the status
+// timeline so it can't be missed, on top of the same action living in the
+// Finance tab itself.
+const ACTION_NEEDED: Partial<Record<Application["status"], { message: string; cta: string }>> = {
+  submitted: {
+    message: "Action needed — pay your application fee so we can review your application.",
+    cta: "Pay Application Fee",
+  },
+  accepted: {
+    message: "Action needed — accept your admission offer to continue toward enrollment.",
+    cta: "View Offer",
+  },
+  admission_accepted: {
+    message: "Action needed — pay your school fee to complete enrollment.",
+    cta: "Pay School Fee",
+  },
+};
 
 export default function PortalPage() {
   const router = useRouter();
@@ -110,6 +130,19 @@ export default function PortalPage() {
     }
   }
 
+  async function cancelMethod(feeType: FeeType) {
+    const token = studentAuth.get();
+    if (!token) return;
+    setActionError(null);
+    try {
+      await cancelVirtualAccount(feeType, token);
+      setMethod(null);
+      await load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Could not cancel — please try again.");
+    }
+  }
+
   async function uploadApplicationFeeProof(file: File) {
     const token = studentAuth.get();
     if (!token) return;
@@ -172,6 +205,7 @@ export default function PortalPage() {
   }
 
   const { application: app, paymentInfo } = data;
+  const actionNeeded = ACTION_NEEDED[app.status];
 
   function renderPaymentSection(
     feeType: FeeType,
@@ -190,6 +224,7 @@ export default function PortalPage() {
           currency={paymentInfo.currency}
           token={studentAuth.get() || ""}
           onPaid={load}
+          onCancel={methods.manual ? () => cancelMethod(feeType) : undefined}
         />
       );
     }
@@ -202,25 +237,45 @@ export default function PortalPage() {
       );
     }
 
-    const chosen =
-      method ?? (methods.razz && !methods.manual ? "razz" : methods.manual ? "manual" : null);
+    // Only auto-select a method when just one is enabled — with both
+    // enabled, let the student choose via PaymentMethodPicker instead of
+    // silently defaulting to manual and hiding the online option.
+    const onlyMethodAvailable =
+      methods.manual && methods.razz ? null : methods.razz ? "razz" : methods.manual ? "manual" : null;
+    const chosen = method ?? onlyMethodAvailable;
 
     if (!chosen) {
       return <PaymentMethodPicker onSelect={(m) => selectMethod(feeType, m)} />;
     }
 
     if (chosen === "razz") {
-      return (
-        <div className="flex items-center gap-2 text-sm text-ink/60">
-          <Loader2 className="size-4 animate-spin" /> Setting up your instant transfer…
-        </div>
-      );
+      // Only actually mid-flight while creatingVA is true — chosen can also
+      // read "razz" as a stale leftover (e.g. the VA naturally expired), in
+      // which case fall back to letting them pick again rather than getting
+      // stuck on this spinner forever.
+      if (creatingVA) {
+        return (
+          <div className="flex items-center gap-2 text-sm text-ink/60">
+            <Loader2 className="size-4 animate-spin" /> Setting up your instant transfer…
+          </div>
+        );
+      }
+      return <PaymentMethodPicker onSelect={(m) => selectMethod(feeType, m)} />;
     }
 
     return (
       <>
         <PaymentInfoCard info={paymentInfo} kind={feeType} />
         <FileUploadBox label={uploadLabel} onUpload={onUpload} />
+        {methods.razz && (
+          <button
+            type="button"
+            onClick={() => setMethod(null)}
+            className="text-xs font-semibold text-ink/40 hover:text-ink/70"
+          >
+            Picked this by mistake? Choose a different payment method
+          </button>
+        )}
       </>
     );
   }
@@ -253,14 +308,22 @@ export default function PortalPage() {
           </div>
         </Reveal>
 
-        {actionError && (
-          <Reveal className="mt-6 rounded-2xl bg-accent-500/10 px-5 py-4 text-sm font-medium text-accent-600">{actionError}</Reveal>
-        )}
-
         {app.status === "rejected" && app.rejectionReason && (
           <Reveal delay={0.12} className="mt-6 rounded-3xl border border-accent-500/20 bg-accent-500/5 p-6">
             <h3 className="font-semibold text-accent-600">Reason</h3>
             <p className="mt-2 text-sm text-ink/70">{app.rejectionReason}</p>
+          </Reveal>
+        )}
+
+        {actionNeeded && (
+          <Reveal delay={0.12} className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-gold-400/30 bg-gold-400/10 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <CircleDollarSign className="size-5 shrink-0 text-gold-400" />
+              <p className="text-sm font-medium text-ink/80">{actionNeeded.message}</p>
+            </div>
+            <Button size="md" variant="accent" onClick={() => setTab("finance")}>
+              {actionNeeded.cta}
+            </Button>
           </Reveal>
         )}
 
@@ -321,6 +384,10 @@ export default function PortalPage() {
 
           {tab === "finance" && (
             <Reveal className="space-y-6">
+              {actionError && (
+                <p className="rounded-2xl bg-accent-500/10 px-5 py-4 text-sm font-medium text-accent-600">{actionError}</p>
+              )}
+
               {app.status === "submitted" &&
                 renderPaymentSection(
                   "application_fee",
@@ -435,7 +502,7 @@ export default function PortalPage() {
             </Reveal>
           )}
 
-          {tab === "placements" && (
+          {tab === "notices" && (
             <Reveal>
               <NoticeBoard />
             </Reveal>

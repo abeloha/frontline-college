@@ -318,3 +318,41 @@ func GetVirtualAccount(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"virtualAccount": va})
 }
+
+// CancelVirtualAccount lets a student back out of an in-progress Razz
+// instant-transfer flow (e.g. picked by mistake) before paying, so they can
+// switch to manual bank transfer instead. It immediately expires the
+// pending virtual account by backdating ExpiresAt rather than introducing a
+// separate "cancelled" status — EffectiveStatus already treats a
+// past-expiry pending row as "expired", which is exactly the state that
+// unblocks manual proof upload (see findPendingVirtualAccount) and hides
+// the row from the portal's "existing VA" check. The row's Status column
+// stays "pending" in the DB, so if the student's bank transfer still lands
+// after this, RazzWebhookHandler (which matches by reference, not expiry)
+// credits it normally.
+// Route: POST /api/student/application/virtual-account/cancel
+func CancelVirtualAccount(c *gin.Context) {
+	app, ok := getOwnApplication(c)
+	if !ok {
+		return
+	}
+
+	var req virtualAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	va := findPendingVirtualAccount(app.ID, req.Type)
+	if va == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no pending virtual account to cancel"})
+		return
+	}
+
+	if err := db.DB.Model(&models.VirtualAccount{}).Where("id = ?", va.ID).Update("expires_at", time.Now()).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not cancel virtual account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "virtual account cancelled"})
+}

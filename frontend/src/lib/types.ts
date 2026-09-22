@@ -100,12 +100,14 @@ export type PaymentInfo = {
 };
 
 export type NoticeCategory = "general" | "placement" | "finance" | "academic" | "event";
+export type NoticeAudience = "all" | "admitted";
 
 export type Notice = {
   id: number;
   title: string;
   body: string;
   category: NoticeCategory;
+  audience: NoticeAudience;
   programId?: number;
   program?: Program;
   fileUrl?: string;
@@ -125,8 +127,13 @@ export const NOTICE_CATEGORY_LABELS: Record<NoticeCategory, string> = {
   event: "Event",
 };
 
+export const NOTICE_AUDIENCE_LABELS: Record<NoticeAudience, string> = {
+  all: "All applicants",
+  admitted: "Admitted students only",
+};
+
 export const STATUS_LABELS: Record<string, string> = {
-  submitted: "Application Submitted",
+  submitted: "Application Fee Pending",
   application_fee_review: "Application Fee — Pending Review",
   under_review: "Under Review",
   accepted: "Accepted",

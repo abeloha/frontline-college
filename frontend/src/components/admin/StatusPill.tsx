@@ -1,7 +1,7 @@
 import { STATUS_LABELS } from "@/lib/types";
 
 const COLORS: Record<string, string> = {
-  submitted: "bg-sky-100 text-primary-700",
+  submitted: "bg-gold-400/15 text-gold-400",
   application_fee_review: "bg-gold-400/15 text-gold-400",
   under_review: "bg-primary-600/10 text-primary-700",
   accepted: "bg-emerald-100 text-emerald-700",
