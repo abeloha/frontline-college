@@ -201,6 +201,27 @@ func (v VirtualAccount) MarshalJSON() ([]byte, error) {
 	}{alias: alias(v), Status: v.EffectiveStatus()})
 }
 
+// SchoolFeeItem is one line of a Program's itemized school-fee breakdown
+// (e.g. "Tuition fee: 70,000"). A Program's total school fee is always the
+// sum of its items — there is no separately-stored total to drift out of
+// sync. Editable by an admin (see handlers.UpdateFeeStructure); seeded with
+// a starting breakdown per program (see seed.seedSchoolFees) but never
+// re-seeded over an admin's edits once a program has at least one item.
+//
+// Deliberately not exposed on any public endpoint — only a student whose own
+// application has reached an admitted status (models.IsAdmittedStatus) ever
+// sees their program's breakdown (handlers.MyApplication), and only an admin
+// can see or edit another program's.
+type SchoolFeeItem struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	ProgramID uint      `gorm:"index" json:"programId"`
+	Label     string    `gorm:"size:150" json:"label"`
+	Amount    float64   `json:"amount"`
+	SortOrder int       `json:"sortOrder"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 // AdmissionLetter is the PDF/image an admin uploads once an application is
 // accepted.
 type AdmissionLetter struct {

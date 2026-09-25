@@ -15,6 +15,7 @@ import (
 
 func Run(dbc *gorm.DB, cfg *config.Config) {
 	seedPrograms(dbc)
+	seedSchoolFees(dbc)
 	seedAdmin(dbc, cfg)
 }
 
@@ -61,13 +62,18 @@ func seedPrograms(dbc *gorm.DB) {
 			ImageURL:      "/images/program-pht.jpg",
 		},
 		{
+			// Slug intentionally left unchanged from its original
+			// "health-education-and-promotion" value — this is a rename of
+			// the same program (matched below by slug, so it updates the
+			// existing row in place), not a new program, and changing the
+			// slug would break any existing bookmarked/indexed URL.
 			Slug:          "health-education-and-promotion",
-			Name:          "Health Education and Promotion (HEP)",
+			Name:          "Health Information Management (HIM)",
 			Category:      "National Diploma",
 			DurationYears: 3,
-			Summary:       "Equips graduates to design and deliver health education campaigns that build healthier communities through behaviour change.",
-			CoreDuties:    "Designing health education materials, running community awareness campaigns, training peer educators, and evaluating public health promotion programs.",
-			PlacesOfWork:  "Ministries of Health, hospitals, NGOs, corporate wellness departments, and international health agencies.",
+			Summary:       "Trains health information officers to manage patient records, health data systems and reporting for hospitals and public health programs.",
+			CoreDuties:    "Compiling and managing patient records, health data entry and analysis, disease coding and classification, HMIS/DHIS2 reporting, and safeguarding patient data confidentiality.",
+			PlacesOfWork:  "Hospitals, Primary Healthcare Centers, State and Federal Ministries of Health, health insurance providers, and NGOs running health data systems.",
 			ImageURL:      "/images/program-hep.jpg",
 		},
 		{
@@ -92,6 +98,74 @@ func seedPrograms(dbc *gorm.DB) {
 		}
 	}
 	log.Println("seed: programs ready")
+}
+
+// standardFeeLines is the set of line items shared by every programme's
+// school-fee breakdown — everything except tuition, which differs by
+// programme group (see seedSchoolFees).
+var standardFeeLines = []struct {
+	Label  string
+	Amount float64
+}{
+	{"Administrative Charges", 10000},
+	{"Library and ICT", 10000},
+	{"Uniform/Lab Coat and School Badge", 25000},
+	{"I.D card", 3000},
+	{"Medical Fee", 10000},
+	{"Departmental Fee", 5000},
+	{"Developmental Fee", 5000},
+	{"Exams", 20000},
+	{"T-Shirt", 10000},
+	{"Matric", 10000},
+}
+
+// feeGroups maps each programme slug to its tuition fee. Every other line
+// item is identical across programmes (standardFeeLines above) — only
+// tuition varies, which is what actually produces the two distinct totals
+// the college quoted (₦178,000 and ₦188,000).
+var feeGroups = map[string]float64{
+	"public-health-technicians":          70000, // ₦178,000 total
+	"environmental-health-technology":    70000, // ₦178,000 total
+	"health-education-and-promotion":     70000, // ₦178,000 total (now "Health Information Management")
+	"community-health-extension-workers": 80000, // ₦188,000 total
+	"retraining-chew":                    80000, // ₦188,000 total
+	"junior-chew":                        80000, // ₦188,000 total
+}
+
+// seedSchoolFees gives every programme a starting itemized school-fee
+// breakdown. Deliberately non-destructive: a programme that already has at
+// least one SchoolFeeItem is left completely alone, so an admin's edits via
+// UpdateFeeStructure are never clobbered by a server restart re-running this
+// seed. Only a programme with zero fee items (a first run, or a brand new
+// programme added later) gets seeded.
+func seedSchoolFees(dbc *gorm.DB) {
+	for slug, tuition := range feeGroups {
+		var program models.Program
+		if err := dbc.Where("slug = ?", slug).First(&program).Error; err != nil {
+			log.Printf("seed: school fees skipped for %q — programme not found", slug)
+			continue
+		}
+
+		var count int64
+		dbc.Model(&models.SchoolFeeItem{}).Where("program_id = ?", program.ID).Count(&count)
+		if count > 0 {
+			continue // admin-owned from here on
+		}
+
+		items := []models.SchoolFeeItem{{ProgramID: program.ID, Label: "Tuition fee", Amount: tuition, SortOrder: 0}}
+		for i, line := range standardFeeLines {
+			items = append(items, models.SchoolFeeItem{
+				ProgramID: program.ID,
+				Label:     line.Label,
+				Amount:    line.Amount,
+				SortOrder: i + 1,
+			})
+		}
+		if err := dbc.Create(&items).Error; err != nil {
+			log.Printf("seed: could not seed school fees for %q: %v", slug, err)
+		}
+	}
+	log.Println("seed: school fee breakdowns ready")
 }
 
 func seedAdmin(dbc *gorm.DB, cfg *config.Config) {

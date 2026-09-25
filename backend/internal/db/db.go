@@ -42,6 +42,7 @@ func Connect(cfg *config.Config) *gorm.DB {
 		&models.PaymentProof{},
 		&models.VirtualAccount{},
 		&models.AdmissionLetter{},
+		&models.SchoolFeeItem{},
 		&models.Notice{},
 		&models.Admin{},
 	); err != nil {

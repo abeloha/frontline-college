@@ -47,7 +47,7 @@ server is configured, so it runs out of the box with zero external services).
 cd backend
 cp .env.example .env   # edit DB_USER / DB_PASSWORD to match your local MySQL
 mysql -uroot -p -e "CREATE DATABASE frontline_college CHARACTER SET utf8mb4;"
-go run ./cmd/api
+go run .
 ```
 
 The API starts on `http://localhost:8080`, auto-migrates all tables, and seeds:

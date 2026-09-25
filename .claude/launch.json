@@ -4,8 +4,8 @@
     {
       "name": "backend",
       "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "cd backend && go run ./cmd/api"],
-      "port": 8080
+      "runtimeArgs": ["-c", "cd backend && go run ."],
+      "port": 8081
     },
     {
       "name": "frontend",

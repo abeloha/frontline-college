@@ -66,20 +66,38 @@ func MyApplication(c *gin.Context) {
 	hydrateApplicationFileURLs(app)
 
 	cfg := config.Cfg
+	paymentInfo := gin.H{
+		"bankName":             cfg.PaymentBankName,
+		"accountName":          cfg.PaymentAccountName,
+		"accountNumber":        cfg.PaymentAccountNumber,
+		"currency":             cfg.PaymentCurrency,
+		"applicationFeeAmount": cfg.ApplicationFeeAmount,
+		"schoolFeeAmount":      cfg.SchoolFeeAmount,
+		"paymentMethods": gin.H{
+			"manual": cfg.ManualPaymentEnabled,
+			"razz":   cfg.RazzPaymentEnabled,
+		},
+	}
+
+	// The itemized school-fee breakdown is only for successful applicants —
+	// it isn't shown (or even sent to the browser) before an application has
+	// reached an admitted status, and even then only for the applicant's own
+	// programme.
+	if models.IsAdmittedStatus(app.Status) {
+		items := schoolFeeItemsForProgram(app.ProgramID)
+		if len(items) > 0 {
+			var total float64
+			for _, item := range items {
+				total += item.Amount
+			}
+			paymentInfo["schoolFeeAmount"] = total
+			paymentInfo["schoolFeeBreakdown"] = gin.H{"items": items, "total": total}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"application": app,
-		"paymentInfo": gin.H{
-			"bankName":             cfg.PaymentBankName,
-			"accountName":          cfg.PaymentAccountName,
-			"accountNumber":        cfg.PaymentAccountNumber,
-			"currency":             cfg.PaymentCurrency,
-			"applicationFeeAmount": cfg.ApplicationFeeAmount,
-			"schoolFeeAmount":      cfg.SchoolFeeAmount,
-			"paymentMethods": gin.H{
-				"manual": cfg.ManualPaymentEnabled,
-				"razz":   cfg.RazzPaymentEnabled,
-			},
-		},
+		"paymentInfo": paymentInfo,
 	})
 }
 
@@ -118,7 +136,7 @@ func UploadSchoolFeeProof(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "you can only upload school fee proof after accepting your admission offer"})
 		return
 	}
-	handleProofUpload(c, app, models.PaymentTypeSchoolFee, "school_fee", "school_fees", config.Cfg.SchoolFeeAmount, models.StatusSchoolFeeReview)
+	handleProofUpload(c, app, models.PaymentTypeSchoolFee, "school_fee", "school_fees", schoolFeeTotalForProgram(app.ProgramID), models.StatusSchoolFeeReview)
 }
 
 func handleProofUpload(c *gin.Context, app *models.Application, proofType, logLabel, subdir string, amount float64, nextStatus string) {
@@ -255,7 +273,7 @@ func CreateVirtualAccount(c *gin.Context) {
 	amount := cfg.ApplicationFeeAmount
 	label := "Application fee"
 	if req.Type == models.PaymentTypeSchoolFee {
-		amount = cfg.SchoolFeeAmount
+		amount = schoolFeeTotalForProgram(app.ProgramID)
 		label = "School fee"
 	}
 

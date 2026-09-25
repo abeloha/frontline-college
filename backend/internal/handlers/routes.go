@@ -60,5 +60,7 @@ func RegisterRoutes(r *gin.Engine, cfg *config.Config) {
 		admin.POST("/notices", CreateNotice)
 		admin.PUT("/notices/:id", UpdateNotice)
 		admin.DELETE("/notices/:id", DeleteNotice)
+		admin.GET("/fees", ListFeeStructures)
+		admin.PUT("/fees/:programId", UpdateFeeStructure)
 	}
 }

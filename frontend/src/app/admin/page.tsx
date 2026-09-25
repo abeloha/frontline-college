@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Loader2, Search, Users, Clock, CheckCircle2, XCircle, GraduationCap, Megaphone } from "lucide-react";
+import { LogOut, Loader2, Search, Users, Clock, CheckCircle2, XCircle, GraduationCap, Megaphone, Banknote } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
 import { Button, LinkButton } from "@/components/ui/Button";
 import { StatusPill } from "@/components/admin/StatusPill";
@@ -91,6 +91,9 @@ export default function AdminDashboardPage() {
             <p className="mt-1 text-sm text-ink/50">Review, verify and decide on applications.</p>
           </div>
           <div className="flex items-center gap-3">
+            <LinkButton href="/admin/fees" variant="outline" withArrow={false}>
+              <Banknote className="size-4" /> School Fees
+            </LinkButton>
             <LinkButton href="/admin/notices" variant="outline" withArrow={false}>
               <Megaphone className="size-4" /> Noticeboard
             </LinkButton>

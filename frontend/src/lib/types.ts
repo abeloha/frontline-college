@@ -89,6 +89,19 @@ export type Application = {
   admissionLetter?: AdmissionLetter | null;
 };
 
+export type SchoolFeeItem = {
+  id: number;
+  programId: number;
+  label: string;
+  amount: number;
+  sortOrder: number;
+};
+
+export type SchoolFeeBreakdown = {
+  items: SchoolFeeItem[];
+  total: number;
+};
+
 export type PaymentInfo = {
   bankName: string;
   accountName: string;
@@ -96,7 +109,16 @@ export type PaymentInfo = {
   currency: string;
   applicationFeeAmount: number;
   schoolFeeAmount: number;
+  // Only present once the applicant's own application has reached an
+  // admitted status — see backend handlers.MyApplication. Not public.
+  schoolFeeBreakdown?: SchoolFeeBreakdown;
   paymentMethods: { manual: boolean; razz: boolean };
+};
+
+export type FeeStructure = {
+  program: Program;
+  items: SchoolFeeItem[];
+  total: number;
 };
 
 export type NoticeCategory = "general" | "placement" | "finance" | "academic" | "event";
